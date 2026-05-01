@@ -1,4 +1,4 @@
-import { getListings } from "@/lib/supabase/client";
+import { searchListings as getListings } from "@/lib/supabase/client";
 import Link from "next/link";
 
 const fmt = (p: number) => `${Math.round(p).toLocaleString("fr-TN")} DT`;
