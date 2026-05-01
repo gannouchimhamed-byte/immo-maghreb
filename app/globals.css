@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Outfit:wght@300;400;500;600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --cream: #F7F2E9; --sand: #EDE5D4; --terra: #C4611F;
+  --dark: #1C1208; --muted: #9A8070; --white: #FDFBF7;
+  --gold: #D4A853; --sage: #2D6A4F; --brown: #5C3D1E;
+}
+body { background: var(--cream); color: var(--dark); font-family: 'Outfit', sans-serif; }
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; font-family: 'Outfit', sans-serif; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+.fade-up { animation: fadeUp .5s ease both; }
+.fade-up-1 { animation: fadeUp .5s .1s ease both; }
+.fade-up-2 { animation: fadeUp .5s .2s ease both; }
+.fade-up-3 { animation: fadeUp .5s .3s ease both; }
+@keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
