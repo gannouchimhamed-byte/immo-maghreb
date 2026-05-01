@@ -1,312 +1,98 @@
 "use client";
-
-import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
-import {
-  Heart,
-  MapPin,
-  Maximize2,
-  BedDouble,
-  Bath,
-  Verified,
-  MessageCircle,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Star,
-} from "lucide-react";
-import type { Listing, Currency } from "@immo-na/types";
-import { cn, formatPrice, formatArea, getPropertyTypeLabel, getDeedLabel, timeAgo } from "@/lib/utils";
+import Link from "next/link";
+
+interface Listing {
+  id: string;
+  type: string;
+  action: string;
+  title: string;
+  price: number;
+  area_m2: number;
+  rooms?: number;
+  wilaya: string;
+  city: string;
+  district?: string;
+  primary_image_url?: string;
+  deed?: string;
+  is_featured?: boolean;
+  is_verified?: boolean;
+  view_count?: number;
+  mosque_distance?: number;
+  school_distance?: number;
+  ai_signal?: string;
+  ai_estimate?: number;
+}
 
 interface ListingCardProps {
   listing: Listing;
-  currency?: Currency;
-  view?: "grid" | "list";
-  onSave?: (id: string) => void;
-  isSaved?: boolean;
+  currency?: string;
 }
 
-const PriceSignalIcon = ({ signal }: { signal: "underpriced" | "fair" | "overpriced" | undefined }) => {
-  if (!signal) return null;
-  const map = {
-    underpriced: { Icon: TrendingDown, color: "text-green-600", label: "Sous-évalué" },
-    fair: { Icon: Minus, color: "text-gold-500", label: "Juste prix" },
-    overpriced: { Icon: TrendingUp, color: "text-terracotta-500", label: "Surévalué" },
-  };
-  const { Icon, color, label } = map[signal];
-  return (
-    <span className={cn("flex items-center gap-1 text-2xs font-medium", color)}>
-      <Icon size={10} />
-      {label}
-    </span>
-  );
-};
+const RATES: Record<string, number> = { TND: 1, EUR: 0.295, USD: 0.323 };
+const SYMBOLS: Record<string, string> = { TND: "DT", EUR: "€", USD: "$" };
 
-export function ListingCard({
-  listing,
-  currency = "TND",
-  view = "grid",
-  onSave,
-  isSaved = false,
-}: ListingCardProps) {
-  const [saved, setSaved] = useState(isSaved);
-  const primaryImage = listing.media.find((m) => m.isPrimary) ?? listing.media[0];
+export function formatPrice(price: number, currency = "TND") {
+  const v = Math.round(price * (RATES[currency] ?? 1));
+  const s = SYMBOLS[currency] ?? "DT";
+  if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M ${s}`;
+  if (v >= 1000) return `${Math.round(v / 1000)}k ${s}`;
+  return `${v.toLocaleString("fr-TN")} ${s}`;
+}
 
-  const handleSave = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSaved(!saved);
-    onSave?.(listing.id);
-  };
+export default function ListingCard({ listing: l, currency = "TND" }: ListingCardProps) {
+  const [saved, setSaved] = useState(false);
 
-  if (view === "list") {
-    return (
-      <Link href={`/listings/${listing.id}`} className="group block">
-        <div className="card flex gap-4 p-4 hover:-translate-y-px transition-transform duration-200">
-          {/* Image */}
-          <div className="relative w-52 flex-shrink-0 rounded-xl overflow-hidden aspect-listing">
-            {primaryImage ? (
-              <Image
-                src={primaryImage.url}
-                alt={listing.titleFr}
-                fill
-                className="listing-img"
-                sizes="208px"
-              />
-            ) : (
-              <div className="w-full h-full bg-sand-100 flex items-center justify-center">
-                <span className="text-sand-400 text-xs">Photo à venir</span>
-              </div>
-            )}
-            {listing.isFeatured && (
-              <span className="absolute top-2 left-2 badge-gold text-2xs">
-                <Star size={9} /> En vedette
-              </span>
-            )}
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-            <div>
-              <div className="flex items-start justify-between gap-3 mb-1.5">
-                <span className="badge-dark text-2xs">
-                  {getPropertyTypeLabel(listing.propertyType)} · {listing.type === "sale" ? "Vente" : "Location"}
-                </span>
-                <button onClick={handleSave} className="p-1.5 -mt-0.5 -mr-0.5 rounded-lg hover:bg-sand-100 transition-colors">
-                  <Heart
-                    size={15}
-                    className={cn("transition-colors", saved ? "fill-terracotta-500 text-terracotta-500" : "text-sand-400")}
-                  />
-                </button>
-              </div>
-              <h3 className="font-display text-lg font-medium text-charcoal-900 line-clamp-1 mb-1">
-                {listing.titleFr}
-              </h3>
-              <div className="flex items-center gap-1.5 text-sand-500 text-xs font-body mb-3">
-                <MapPin size={11} />
-                <span>{listing.location.delegation}, {listing.location.wilaya}</span>
-              </div>
-              <p className="text-sm font-body text-sand-500 line-clamp-2">{listing.descriptionFr}</p>
-            </div>
-
-            <div className="flex items-end justify-between mt-3">
-              <div className="flex items-center gap-4 text-sm font-body text-sand-600">
-                <span className="flex items-center gap-1.5">
-                  <Maximize2 size={12} className="text-gold-500" />
-                  {formatArea(listing.areaM2)}
-                </span>
-                {listing.rooms && (
-                  <span className="flex items-center gap-1.5">
-                    <BedDouble size={12} className="text-gold-500" />
-                    {listing.rooms} pièces
-                  </span>
-                )}
-                {listing.bathrooms && (
-                  <span className="flex items-center gap-1.5">
-                    <Bath size={12} className="text-gold-500" />
-                    {listing.bathrooms} sdb
-                  </span>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="font-display text-xl font-semibold text-charcoal-900">
-                  {formatPrice(listing.priceTnd, currency)}
-                  {listing.type === "rent" && (
-                    <span className="text-sm font-body font-normal text-sand-400">/mois</span>
-                  )}
-                </div>
-                {listing.aiEstimateTnd && (
-                  <div className="text-xs font-body text-sand-400">
-                    Estim. IA: {formatPrice(listing.aiEstimateTnd, currency)}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
-  }
+  const signalColor = l.ai_signal === "underpriced" ? "#2D6A4F" : l.ai_signal === "overpriced" ? "#B91C1C" : "#C4611F";
+  const signalLabel = l.ai_signal === "underpriced" ? "Sous-évalué" : l.ai_signal === "overpriced" ? "Sur-évalué" : "Juste";
 
   return (
-    <Link href={`/listings/${listing.id}`} className="group block">
-      <article className="card overflow-hidden hover:-translate-y-1 transition-transform duration-300">
-        {/* Image container */}
-        <div className="relative overflow-hidden aspect-listing bg-sand-100">
-          {primaryImage ? (
-            <Image
-              src={primaryImage.url}
-              alt={listing.titleFr}
-              fill
-              className="listing-img"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-sand-400 text-sm font-body">Photo à venir</span>
-            </div>
-          )}
-
-          {/* Top badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-            {listing.isFeatured && (
-              <span className="badge badge-gold">
-                <Star size={9} />
-                En vedette
-              </span>
-            )}
-            <span className="badge badge-dark">
-              {listing.type === "sale" ? "Vente" : "Location"}
+    <Link href={`/listings/${l.id}`} style={{ display: "block", textDecoration: "none" }}>
+      <div style={{ background: "#FDFBF7", borderRadius: 14, overflow: "hidden", border: "1px solid #EDE5D4", transition: "transform .25s, box-shadow .25s", cursor: "pointer" }}>
+        <div style={{ position: "relative", height: 190 }}>
+          <img
+            src={l.primary_image_url || "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&q=75"}
+            alt={l.title}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,transparent 50%,rgba(28,18,8,.5))" }} />
+          <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 5 }}>
+            {l.is_featured && <span style={{ padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: "#1C1208", color: "#D4A853" }}>Premium</span>}
+            <span style={{ padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: l.action === "vente" ? "#2D6A4F" : "#1A56A4", color: "#fff" }}>
+              {l.action === "vente" ? "Vente" : "Location"}
             </span>
           </div>
-
-          {/* Save button */}
           <button
-            onClick={handleSave}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center border border-white/50 shadow-sm hover:bg-white transition-all"
-            aria-label={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
+            onClick={(e) => { e.preventDefault(); setSaved(!saved); }}
+            style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: "50%", background: "rgba(253,251,247,.9)", display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", fontSize: 14 }}
           >
-            <Heart
-              size={14}
-              className={cn(
-                "transition-all duration-200",
-                saved ? "fill-terracotta-500 text-terracotta-500 scale-110" : "text-charcoal-700"
-              )}
-            />
+            {saved ? "❤️" : "🤍"}
           </button>
-
-          {/* Photo count */}
-          {listing.media.length > 1 && (
-            <span className="absolute bottom-3 right-3 badge badge-dark text-2xs">
-              {listing.media.length} photos
-            </span>
+          <div style={{ position: "absolute", bottom: 10, left: 12 }}>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 600, color: "#fff" }}>{formatPrice(l.price, currency)}</div>
+            {l.action === "location" && <div style={{ fontSize: 10, color: "rgba(255,255,255,.7)" }}>/mois</div>}
+          </div>
+          {l.is_verified && (
+            <div style={{ position: "absolute", bottom: 10, right: 10, display: "flex", alignItems: "center", gap: 3, background: "rgba(45,106,79,.9)", borderRadius: 12, padding: "2px 7px" }}>
+              <span style={{ fontSize: 10, color: "#fff", fontWeight: 600 }}>✓ Vérifié</span>
+            </div>
           )}
         </div>
-
-        {/* Content */}
-        <div className="p-4">
-          {/* Location */}
-          <div className="flex items-center gap-1 text-sand-500 text-xs font-body mb-2">
-            <MapPin size={10} className="flex-shrink-0" />
-            <span className="truncate">{listing.location.delegation}, {listing.location.wilaya}</span>
-          </div>
-
-          {/* Title */}
-          <h3 className="font-display text-lg font-medium text-charcoal-900 line-clamp-2 mb-3 leading-tight">
-            {listing.titleFr}
-          </h3>
-
-          {/* Specs */}
-          <div className="flex items-center gap-3 text-xs font-body text-sand-600 mb-3 flex-wrap">
-            <span className="flex items-center gap-1">
-              <Maximize2 size={11} className="text-gold-500" />
-              {formatArea(listing.areaM2)}
-            </span>
-            {listing.rooms && (
-              <span className="flex items-center gap-1">
-                <BedDouble size={11} className="text-gold-500" />
-                {listing.rooms} pièces
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#1C1208", marginBottom: 3 }}>{l.title}</div>
+          <div style={{ fontSize: 11, color: "#9A8070", marginBottom: 10 }}>📍 {l.city}, {l.wilaya}</div>
+          <div style={{ display: "flex", gap: 12, paddingTop: 8, borderTop: "1px solid #EDE5D4", fontSize: 11, color: "#5C3D1E", alignItems: "center" }}>
+            {l.rooms && l.rooms > 0 && <span>🛏 {l.rooms}p</span>}
+            <span>📐 {l.area_m2}m²</span>
+            {l.ai_signal && (
+              <span style={{ marginLeft: "auto", padding: "2px 7px", borderRadius: 10, fontSize: 9, fontWeight: 700, background: `${signalColor}20`, color: signalColor }}>
+                {signalLabel}
               </span>
             )}
-            {listing.bathrooms && (
-              <span className="flex items-center gap-1">
-                <Bath size={11} className="text-gold-500" />
-                {listing.bathrooms} sdb
-              </span>
-            )}
-            <span className="flex items-center gap-1 ml-auto">
-              <span
-                className={cn(
-                  "font-medium px-1.5 py-0.5 rounded-md text-2xs",
-                  listing.deedType === "titre_bleu"
-                    ? "bg-blue-50 text-blue-700"
-                    : "bg-sand-100 text-sand-600"
-                )}
-              >
-                {getDeedLabel(listing.deedType)}
-              </span>
-            </span>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-sand-100 pt-3">
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="font-display text-xl font-semibold text-charcoal-900">
-                  {formatPrice(listing.priceTnd, currency)}
-                  {listing.type === "rent" && (
-                    <span className="text-sm font-body font-normal text-sand-400">/mois</span>
-                  )}
-                </div>
-                {listing.areaM2 > 0 && (
-                  <div className="text-2xs font-body text-sand-400 mt-0.5">
-                    {formatPrice(Math.round(listing.priceTnd / listing.areaM2), currency)}/m²
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                {listing.aiEstimateTnd && (
-                  <PriceSignalIcon
-                    signal={
-                      listing.priceTnd > listing.aiEstimateTnd * 1.1
-                        ? "overpriced"
-                        : listing.priceTnd < listing.aiEstimateTnd * 0.9
-                        ? "underpriced"
-                        : "fair"
-                    }
-                  />
-                )}
-                <div className="text-2xs font-body text-sand-400">
-                  {timeAgo(listing.publishedAt ?? listing.createdAt)}
-                </div>
-              </div>
-            </div>
-
-            {/* Agent row */}
-            {listing.owner && (
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-sand-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-sand-200 flex items-center justify-center text-2xs font-medium text-sand-600">
-                    {listing.owner.firstName?.[0]}
-                    {listing.owner.lastName?.[0]}
-                  </div>
-                  <span className="text-xs font-body text-sand-500 truncate max-w-[100px]">
-                    {listing.owner.firstName} {listing.owner.lastName}
-                  </span>
-                  {listing.owner.role !== "seeker" && (
-                    <Verified size={11} className="text-gold-500 flex-shrink-0" />
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-2xs font-body text-sand-400">
-                  <MessageCircle size={10} />
-                  {listing.leadCount} contacts
-                </div>
-              </div>
-            )}
+            <span style={{ color: "#9A8070", fontSize: 10 }}>👁 {l.view_count ?? 0}</span>
           </div>
         </div>
-      </article>
+      </div>
     </Link>
   );
 }
