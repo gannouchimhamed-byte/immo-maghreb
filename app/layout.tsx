@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "ImmoMaghreb — Immobilier Tunisie & Maghreb",
-  description: "Trouvez votre bien immobilier en Tunisie. Appartements, villas, terrains avec estimation IA et contact WhatsApp.",
-  keywords: "immobilier tunisie, appartement tunis, villa, terrain, location, vente",
+  title: "Hestia — Trouvez votre chez-vous au Maghreb",
+  description: "Hestia, la plateforme immobilière N°1 en Tunisie. Appartements, villas, terrains avec estimation IA et contact WhatsApp.",
+  keywords: "hestia, immobilier tunisie, appartement tunis, villa, terrain, location, vente",
   openGraph: {
-    title: "ImmoMaghreb",
+    title: "Hestia — Find Your Home",
     description: "N°1 de l'immobilier au Maghreb",
     type: "website",
   },
@@ -18,7 +14,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className={outfit.variable} style={{ fontFamily: "var(--font-outfit), sans-serif", background: "#F7F2E9", margin: 0 }}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+      </head>
+      <body style={{ margin:0, padding:0, background:"#F7F3EE", fontFamily:"Georgia, serif" }}>
         {children}
       </body>
     </html>
