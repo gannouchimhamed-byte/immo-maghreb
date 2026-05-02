@@ -1,11 +1,13 @@
 "use client";
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/ui/Navbar";
 import ListingCard, { type Listing } from "@/components/listings/ListingCard";
 import SearchFilters, { type SearchFilters as SF } from "@/components/search/SearchFilters";
 import ComparisonEngine from "@/components/listings/ComparisonEngine";
 import PriceTrendWidget from "@/components/listings/PriceTrendWidget";
+import { isWithinCommute } from "@/lib/commute";
+import type { CommuteState } from "@/lib/commute";
 
 interface Props { listings: Listing[]; initialFilters: SF; }
 
@@ -16,6 +18,15 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [comparison, setComparison] = useState<string[]>([]);
   const [view, setView] = useState<"grid"|"list">("grid");
+
+  // Commute filter state (client-side only, not in URL)
+  const commute = filters.commute as CommuteState | null | undefined;
+
+  // Apply commute filter on top of server-fetched listings
+  const displayedListings = useMemo(() => {
+    if (!commute) return listings;
+    return listings.filter(l => isWithinCommute((l as any).lat, (l as any).lng, commute));
+  }, [listings, commute]);
 
   const handleFilterChange = useCallback((f: SF) => {
     setFilters(f);
@@ -47,7 +58,11 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
                 {filters.action==="vente"?"Biens à vendre":filters.action==="location"?"Biens à louer":"Tous les biens"}
                 {filters.wilaya && <span className="text-gold"> · {filters.wilaya}</span>}
               </h1>
-              <p className="text-cream-muted text-[13px] mt-1">{listings.length} bien{listings.length!==1?"s":""} disponible{listings.length!==1?"s":""}</p>
+              <p className="text-cream-muted text-[13px] mt-1">{displayedListings.length} bien{displayedListings.length!==1?"s":""} disponible{displayedListings.length!==1?"s":""}
+                {commute && listings.length !== displayedListings.length && (
+                  <span className="ml-2 text-gold font-medium">· filtrés par trajet</span>
+                )}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               {/* Mobile filter button */}
@@ -71,7 +86,7 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
 
         <div className="flex gap-6 items-start">
           {/* Sidebar */}
-          <SearchFilters filters={filters} onChange={handleFilterChange} isOpen={drawerOpen} onClose={()=>setDrawerOpen(false)} resultCount={listings.length}/>
+          <SearchFilters filters={filters} onChange={handleFilterChange} isOpen={drawerOpen} onClose={()=>setDrawerOpen(false)} resultCount={displayedListings.length}/>
 
           {/* Right content */}
           <div className="flex-1 min-w-0 space-y-6">
@@ -80,14 +95,27 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
               <PriceTrendWidget wilaya={activeWilaya} action={(filters.action as any)||"vente"} className="animate-fade-up"/>
             )}
 
+            {/* Commute active banner */}
+            {commute && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-navy/5 border border-navy/10 animate-fade-up">
+                <span className="text-xl">{["car","transit","walk","bike"].includes(commute.mode) ? {car:"🚗",transit:"🚇",walk:"🚶",bike:"🚲"}[commute.mode] : "📍"}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-navy">Trajet vers <span className="text-gold">{commute.address.split(",")[0]}</span></p>
+                  <p className="text-[11px] text-cream-muted">Max {commute.maxMinutes} min · {displayedListings.length} bien{displayedListings.length!==1?"s":""} dans la zone</p>
+                </div>
+                <button onClick={() => handleFilterChange({...filters, commute: null})}
+                  className="text-[11px] text-rose-500 hover:underline font-medium shrink-0">Désactiver</button>
+              </div>
+            )}
+
             {/* Grid */}
-            {listings.length === 0 ? (
+            {displayedListings.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="w-16 h-16 rounded-full bg-navy/5 flex items-center justify-center mb-4">
                   <svg className="w-8 h-8 text-navy/20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" strokeWidth="1.5"/><path d="M9 22V12h6v10" stroke="currentColor" strokeWidth="1.5"/></svg>
                 </div>
                 <h3 className="font-display text-[18px] text-navy font-semibold mb-1">Aucun résultat</h3>
-                <p className="text-cream-muted text-[13px]">Modifiez vos filtres pour voir plus de biens.</p>
+                <p className="text-cream-muted text-[13px]">{commute ? `Aucun bien à moins de ${commute.maxMinutes} min de ${commute.address.split(",")[0]}` : "Modifiez vos filtres pour voir plus de biens."}</p>
                 <button onClick={()=>handleFilterChange({})} className="mt-4 px-5 py-2 rounded-lg bg-navy text-gold text-[13px] font-semibold hover:bg-navy-light transition">
                   Réinitialiser les filtres
                 </button>
@@ -97,13 +125,14 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
                 ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
                 : "flex flex-col gap-4"
               }>
-                {listings.map((l, i) => (
+                {displayedListings.map((l, i) => (
                   <ListingCard
                     key={l.id}
                     listing={l}
                     onCompareToggle={toggleCompare}
                     isInComparison={comparison.includes(l.id)}
                     style={{animationDelay:`${i*30}ms`}}
+                    commute={commute}
                   />
                 ))}
               </div>

@@ -2,6 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { estimateCommuteMinutes, MODE_LABELS } from "@/lib/commute";
+import type { CommuteState } from "@/lib/commute";
 
 export interface Listing {
   id: string;
@@ -39,6 +41,7 @@ interface ListingCardProps {
   onCompareToggle?: (id: string) => void;
   isInComparison?: boolean;
   style?: React.CSSProperties;
+  commute?: CommuteState | null;
 }
 
 const formatPrice = (price: number, action: string) => {
@@ -65,13 +68,20 @@ const TYPE_LABELS: Record<string, string> = {
 
 const BLUR_PLACEHOLDER = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/wAARCAAEAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgQF/8QAIRAAAQQBBAMAAAAAAAAAAAAAAQACAxEEEiExQVH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8Aqhh6rU6hJtb7Kmqqmh7W0LqOgDtD/9k=";
 
-export default function ListingCard({ listing: l, onCompareToggle, isInComparison = false, style }: ListingCardProps) {
+export default function ListingCard({ listing: l, onCompareToggle, isInComparison = false, style, commute }: ListingCardProps) {
   const [imgIdx, setImgIdx] = useState(0);
   const [hovered, setHovered] = useState(false);
 
   const imgs = [l.primary_image_url, ...(l.image_urls || [])].filter(Boolean) as string[];
   const pricePerM2 = l.area_m2 > 0 ? Math.round(l.price / l.area_m2) : null;
   const location = [l.district || l.delegation, l.wilaya].filter(Boolean).join(", ");
+
+  // Compute commute time if commute filter is active and listing has coordinates
+  const commuteMinutes = commute && (l as any).lat && (l as any).lng
+    ? estimateCommuteMinutes((l as any).lat, (l as any).lng, commute.lat, commute.lng, commute.mode)
+    : null;
+  const commuteOk = commuteMinutes !== null && commuteMinutes <= commute!.maxMinutes;
+  const commuteCfg = commute ? MODE_LABELS[commute.mode] : null;
 
   return (
     <article
@@ -225,6 +235,22 @@ export default function ListingCard({ listing: l, onCompareToggle, isInCompariso
             {l.metro_distance  && <span className="text-[11px] px-2 py-0.5 rounded bg-cream text-cream-muted">🚇 {l.metro_distance<1000?`${l.metro_distance}m`:`${(l.metro_distance/1000).toFixed(1)}km`}</span>}
             {l.beach_distance  && <span className="text-[11px] px-2 py-0.5 rounded bg-cream text-cream-muted">🏖 {l.beach_distance<1000?`${l.beach_distance}m`:`${(l.beach_distance/1000).toFixed(1)}km`}</span>}
             {l.school_distance && <span className="text-[11px] px-2 py-0.5 rounded bg-cream text-cream-muted">🏫 {l.school_distance<1000?`${l.school_distance}m`:`${(l.school_distance/1000).toFixed(1)}km`}</span>}
+          </div>
+        )}
+
+        {/* Commute badge */}
+        {commuteMinutes !== null && commuteCfg && (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-semibold ${
+            commuteOk
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "bg-rose-50 text-rose-600 border border-rose-200"
+          }`}>
+            <span className="text-base leading-none">{commuteCfg.icon}</span>
+            <span>{commuteMinutes} min vers {commute!.address.split(",")[0]}</span>
+            {commuteOk
+              ? <svg className="w-3.5 h-3.5 ml-auto text-emerald-600" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              : <svg className="w-3.5 h-3.5 ml-auto text-rose-500" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            }
           </div>
         )}
 

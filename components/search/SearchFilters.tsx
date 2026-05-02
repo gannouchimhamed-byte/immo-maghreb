@@ -1,5 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
+import CommuteFilter from "@/components/commute/CommuteFilter";
+import type { CommuteState } from "@/lib/commute";
 
 export interface SearchFilters {
   action?: string;
@@ -17,6 +19,7 @@ export interface SearchFilters {
   hasPool?: boolean;
   hasTerrace?: boolean;
   deed?: string;
+  commute?: CommuteState | null;
 }
 
 interface Props {
@@ -234,6 +237,18 @@ export default function SearchFilters({ filters, onChange, isOpen, onClose, resu
             {DEEDS.map(d=><option key={d.v} value={d.v}>{d.l}</option>)}
           </select>
         </Section>
+
+        {/* ── Commute filter ─────────────────────────────────────────── */}
+        <Section title="⏱ Temps de trajet" open={false}>
+          <p className="text-[11px] text-cream-muted mb-3 leading-relaxed">
+            Filtrer les biens selon la distance à votre lieu de travail, école, ou tout autre point d'intérêt.
+          </p>
+          <CommuteFilter
+            compact
+            value={filters.commute || null}
+            onChange={(v) => upd("commute", v)}
+          />
+        </Section>
       </div>
 
       {/* Footer */}
@@ -261,3 +276,6 @@ export default function SearchFilters({ filters, onChange, isOpen, onClose, resu
     </>
   );
 }
+
+// ── Re-export commute types so ListingsClient can import from one place ──────
+export type { CommuteState, TransportMode } from "@/lib/commute";

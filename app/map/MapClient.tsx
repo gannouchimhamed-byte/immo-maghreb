@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/ui/Navbar";
+import CommuteFilter from "@/components/commute/CommuteFilter";
+import { generateCircleGeoJSON, isWithinCommute } from "@/lib/commute";
+import type { CommuteState } from "@/lib/commute";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MapListing {
@@ -205,8 +208,10 @@ export default function MapClient({ listings, initialFilters }: Props) {
   const [popup, setPopup] = useState<MapListing | null>(null);
   const [mobileTab, setMobileTab] = useState<"map"|"list">("map");
   const [searchArea, setSearchArea] = useState(false);
+  const [commute, setCommute] = useState<CommuteState | null>(null);
+  const [showCommutePanel, setShowCommutePanel] = useState(false);
 
-  // Client-side filter
+  // Client-side filter + commute filter
   const filtered = listings.filter(l => {
     if (filters.action && l.action !== filters.action) return false;
     if (filters.type && l.type !== filters.type) return false;
@@ -214,6 +219,7 @@ export default function MapClient({ listings, initialFilters }: Props) {
     if (filters.minPrice && l.price < Number(filters.minPrice)) return false;
     if (filters.maxPrice && l.price > Number(filters.maxPrice)) return false;
     if (filters.rooms && (l.rooms===null || l.rooms < Number(filters.rooms))) return false;
+    if (commute && !isWithinCommute(l.lat, l.lng, commute)) return false;
     return true;
   });
 
@@ -319,7 +325,63 @@ export default function MapClient({ listings, initialFilters }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered.length, activeId, mapLoaded, filters.action, filters.type, filters.wilaya, filters.minPrice, filters.maxPrice, filters.rooms]);
 
-  // ── Fit map to listings on load ────────────────────────────────────────────
+  // ── Draw / update isochrone circle when commute changes ───────────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+
+    const map = mapRef.current;
+    const SOURCE_ID = "commute-circle";
+    const FILL_ID   = "commute-fill";
+    const LINE_ID   = "commute-line";
+    const PIN_ID    = "commute-pin";
+
+    // Remove old layers + source
+    if (map.getLayer(FILL_ID)) map.removeLayer(FILL_ID);
+    if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
+    if (map.getLayer(PIN_ID))  map.removeLayer(PIN_ID);
+    if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+
+    if (!commute) return;
+
+    import("@/lib/commute").then(({ commuteRadiusKm, generateCircleGeoJSON }) => {
+      const radius = commuteRadiusKm(commute.mode, commute.maxMinutes);
+      const circleFeature = generateCircleGeoJSON(commute.lat, commute.lng, radius);
+      const pinFeature = {
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [commute.lng, commute.lat] },
+        properties: {},
+      };
+
+      map.addSource(SOURCE_ID, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [circleFeature, pinFeature] },
+      });
+
+      // Semi-transparent fill
+      map.addLayer({
+        id: FILL_ID, type: "fill", source: SOURCE_ID,
+        filter: ["==", "$type", "Polygon"],
+        paint: { "fill-color": "#D4AF64", "fill-opacity": 0.10 },
+      });
+
+      // Gold border
+      map.addLayer({
+        id: LINE_ID, type: "line", source: SOURCE_ID,
+        filter: ["==", "$type", "Polygon"],
+        paint: { "line-color": "#D4AF64", "line-width": 2, "line-dasharray": [4, 3], "line-opacity": 0.7 },
+      });
+
+      // Center pin (destination)
+      map.addLayer({
+        id: PIN_ID, type: "circle", source: SOURCE_ID,
+        filter: ["==", "$type", "Point"],
+        paint: { "circle-radius": 7, "circle-color": "#D4AF64", "circle-stroke-width": 3, "circle-stroke-color": "#1B2B3A" },
+      });
+
+      // Fly to destination
+      map.flyTo({ center: [commute.lng, commute.lat], zoom: Math.max(10, 13 - Math.log2(radius)), duration: 1000 });
+    });
+  }, [commute, mapLoaded]);
   const fitBounds = useCallback(() => {
     if (!mapRef.current || filtered.length === 0) return;
     import("maplibre-gl").then(mod => {
@@ -349,6 +411,27 @@ export default function MapClient({ listings, initialFilters }: Props) {
         {/* Filter bar */}
         <FilterBar filters={filters} onChange={setFilters} count={filtered.length} />
 
+        {/* Commute toggle button (sits on filter bar right side on desktop) */}
+        <div className="hidden sm:flex absolute right-4 top-[68px] z-20">
+          <button onClick={() => setShowCommutePanel(p => !p)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[12px] font-semibold shadow-lg transition-all ${
+              commute
+                ? "bg-navy text-gold border-navy"
+                : "bg-[#FDFAF6] text-navy border-navy/20 hover:border-navy/40"
+            }`}>
+            ⏱
+            {commute ? `Trajet · ${commute.maxMinutes}min` : "Temps de trajet"}
+            {commute && (
+              <button onClick={(e) => { e.stopPropagation(); setCommute(null); setShowCommutePanel(false); }}
+                className="w-4 h-4 rounded-full bg-white/20 hover:bg-rose-400 flex items-center justify-center ml-1 transition-colors">
+                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            )}
+          </button>
+        </div>
+
         {/* Mobile tabs */}
         <div className="lg:hidden flex border-b border-navy/10 bg-[#FDFAF6] shrink-0">
           {(["map","list"] as const).map(tab => (
@@ -365,9 +448,14 @@ export default function MapClient({ listings, initialFilters }: Props) {
           {/* ── LIST (left) ────────────────────────────────────────────── */}
           <div className={`w-full lg:w-[380px] shrink-0 border-r border-navy/10 bg-[#FDFAF6] flex-col ${mobileTab==="list"?"flex":"hidden lg:flex"}`}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-navy/8 shrink-0">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-cream-muted">
-                {filtered.length} bien{filtered.length!==1?"s":""}
-              </p>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-cream-muted">
+                  {filtered.length} bien{filtered.length!==1?"s":""}
+                </p>
+                {commute && (
+                  <p className="text-[10px] text-gold mt-0.5">⏱ {commute.maxMinutes} min · {commute.address.split(",")[0]}</p>
+                )}
+              </div>
               <button onClick={fitBounds} className="text-[11px] text-gold hover:underline font-medium flex items-center gap-1">
                 <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
                   <rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
@@ -421,6 +509,17 @@ export default function MapClient({ listings, initialFilters }: Props) {
                   <div className="w-10 h-10 rounded-full border-2 border-gold border-t-transparent animate-spin"/>
                   <p className="text-[13px] text-cream-muted font-medium">Chargement de la carte…</p>
                 </div>
+              </div>
+            )}
+
+            {/* Commute panel */}
+            {showCommutePanel && (
+              <div className="absolute top-4 left-4 z-20 animate-fade-up">
+                <CommuteFilter
+                  value={commute}
+                  onChange={(v) => { setCommute(v); if (!v) setShowCommutePanel(false); }}
+                  compact={false}
+                />
               </div>
             )}
 
