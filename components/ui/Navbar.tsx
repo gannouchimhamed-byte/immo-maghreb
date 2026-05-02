@@ -2,10 +2,22 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { fetchSavedSearches } from "@/lib/saved-searches";
 
-export default function Navbar() {
+interface NavbarProps {
+  savedSearchCount?: number; // optional override (passed from server-fetched pages)
+}
+
+export default function Navbar({ savedSearchCount }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(savedSearchCount ?? 0);
   const pathname = usePathname();
+
+  // Load alert count from Supabase client-side (only if not passed in)
+  useEffect(() => {
+    if (savedSearchCount !== undefined) { setAlertCount(savedSearchCount); return; }
+    fetchSavedSearches().then(s => setAlertCount(s.filter(x => x.active).length)).catch(() => {});
+  }, [savedSearchCount]);
 
   const links = [
     { href: "/listings", label: "Annonces" },
@@ -13,6 +25,10 @@ export default function Navbar() {
     { href: "/listings?action=location", label: "Location" },
     { href: "/map", label: "🗺 Carte" },
   ];
+
+  const isActive = (href: string) =>
+    pathname === href || (href === "/map" && pathname === "/map") ||
+    (href === "/listings" && pathname === "/listings" && !pathname.includes("[id]"));
 
   return (
     <nav className="sticky top-0 z-50 bg-navy border-b border-gold/20">
@@ -39,15 +55,29 @@ export default function Navbar() {
           {links.map(link => (
             <Link key={link.href} href={link.href}
               className={`px-4 py-2 text-[13px] transition-colors rounded-lg ${
-                pathname === link.href || (link.href === "/map" && pathname === "/map")
-                  ? "text-gold bg-white/8"
-                  : "text-cream/70 hover:text-cream hover:bg-white/5"
+                isActive(link.href) ? "text-gold bg-white/8" : "text-cream/70 hover:text-cream hover:bg-white/5"
               }`}>
               {link.label}
             </Link>
           ))}
         </div>
 
+        {/* Alerts bell */}
+        <Link href="/saved-searches"
+          className="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 transition"
+          title="Mes alertes">
+          <svg className="w-5 h-5 text-cream/70 hover:text-cream" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2a6 6 0 00-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 00-6-6z" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M8.5 16.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          {alertCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-gold text-navy text-[9px] font-bold flex items-center justify-center leading-none">
+              {alertCount > 9 ? "9+" : alertCount}
+            </span>
+          )}
+        </Link>
+
+        {/* Publish CTA */}
         <Link href="/listings" className="hidden md:inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gold text-navy text-[13px] font-semibold hover:bg-gold/90 transition-colors no-underline">
           Publier une annonce
         </Link>
@@ -71,6 +101,11 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <Link href="/saved-searches" onClick={() => setMenuOpen(false)}
+            className="py-2.5 text-[14px] text-cream/80 hover:text-gold transition-colors border-b border-white/5 no-underline flex items-center gap-2">
+            🔔 Mes alertes
+            {alertCount > 0 && <span className="px-1.5 py-0.5 rounded-full bg-gold text-navy text-[10px] font-bold">{alertCount}</span>}
+          </Link>
           <Link href="/listings" onClick={() => setMenuOpen(false)}
             className="mt-2 py-3 text-center rounded-lg bg-gold text-navy text-[13px] font-bold no-underline">
             Publier une annonce

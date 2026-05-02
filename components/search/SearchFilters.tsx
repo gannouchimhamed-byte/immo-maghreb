@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import CommuteFilter from "@/components/commute/CommuteFilter";
+import SaveSearchModal from "@/components/search/SaveSearchModal";
 import type { CommuteState } from "@/lib/commute";
 
 export interface SearchFilters {
@@ -45,61 +46,6 @@ function Section({ title, children, open: defaultOpen=true }: { title:string; ch
         </svg>
       </button>
       {open && <div className="pb-4">{children}</div>}
-    </div>
-  );
-}
-
-function SaveModal({ onClose, onSave }: { onClose:()=>void; onSave:(n:string,c:string,f:string)=>void }) {
-  const [name,setName] = useState("");
-  const [channel,setChannel] = useState("whatsapp");
-  const [freq,setFreq] = useState("instant");
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="w-full max-w-md bg-[#FDFAF6] rounded-2xl p-6 shadow-2xl animate-fade-up">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-navy flex items-center justify-center">
-            <svg className="w-5 h-5 text-gold" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8a2 2 0 110-4 2 2 0 010 4z"/></svg>
-          </div>
-          <div>
-            <h3 className="font-display text-[16px] font-bold text-navy">Sauvegarder cette recherche</h3>
-            <p className="text-[12px] text-cream-muted">Alerté dès qu'un bien correspond</p>
-          </div>
-        </div>
-        <div className="mb-4">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-navy/60 mb-1.5">Nom de l'alerte</label>
-          <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Ex: Appartement Lac 2 — 400K"
-            className="w-full px-3 py-2.5 rounded-lg border border-navy/15 bg-white text-[13px] text-navy placeholder:text-cream-muted/60 focus:outline-none focus:ring-2 focus:ring-gold/40"/>
-        </div>
-        <div className="mb-4">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-navy/60 mb-2">Canal</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[{v:"whatsapp",l:"WhatsApp",i:"💬"},{v:"email",l:"Email",i:"📧"},{v:"push",l:"Push",i:"🔔"}].map(c=>(
-              <button key={c.v} onClick={()=>setChannel(c.v)}
-                className={`py-2 px-3 rounded-lg border text-[12px] font-medium transition-all ${channel===c.v?"bg-navy text-gold border-navy":"bg-white text-cream-muted border-navy/15 hover:border-navy/30"}`}>
-                <span className="block text-base mb-0.5">{c.i}</span>{c.l}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mb-6">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-navy/60 mb-2">Fréquence</label>
-          <div className="flex gap-2">
-            {[{v:"instant",l:"Instantané"},{v:"daily",l:"Quotidien"},{v:"weekly",l:"Hebdo"}].map(f=>(
-              <button key={f.v} onClick={()=>setFreq(f.v)}
-                className={`flex-1 py-2 rounded-lg border text-[12px] font-medium transition-all ${freq===f.v?"bg-gold/15 text-navy border-gold":"bg-white text-cream-muted border-navy/15 hover:border-navy/30"}`}>
-                {f.l}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-navy/15 text-[13px] font-medium text-cream-muted hover:bg-cream transition">Annuler</button>
-          <button onClick={()=>name.trim()&&onSave(name.trim(),channel,freq)} disabled={!name.trim()}
-            className="flex-1 py-2.5 rounded-lg bg-navy text-gold text-[13px] font-semibold disabled:opacity-40 hover:bg-navy-light transition">
-            Activer l'alerte
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -272,7 +218,13 @@ export default function SearchFilters({ filters, onChange, isOpen, onClose, resu
           <div className="relative ml-auto w-80 h-full bg-[#FDFAF6] shadow-2xl flex flex-col animate-slide-in-right">{panel}</div>
         </div>
       )}
-      {showSave && <SaveModal onClose={()=>setShowSave(false)} onSave={(n,c,f)=>{console.log("save",{n,c,f,filters});setShowSave(false);}}/>}
+      {showSave && (
+        <SaveSearchModal
+          filters={filters}
+          onClose={() => setShowSave(false)}
+          onSaved={() => setShowSave(false)}
+        />
+      )}
     </>
   );
 }

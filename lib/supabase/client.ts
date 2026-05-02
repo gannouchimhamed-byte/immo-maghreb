@@ -86,3 +86,99 @@ export async function getListingsForMap(filters: {
   if (error) { console.error(error); return []; }
   return data || [];
 }
+
+// ─── Saved Searches ───────────────────────────────────────────────────────────
+
+// ─── Saved Searches ───────────────────────────────────────────────────────────
+
+export interface SavedSearch {
+  id: string;
+  user_id: string | null;
+  session_id: string | null;
+  name: string;
+  filters: Record<string, any>;
+  channel: "whatsapp" | "email" | "push";
+  frequency: "instant" | "daily" | "weekly";
+  active: boolean;
+  match_count: number | null;
+  last_triggered_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+}
+
+export function getSessionId(): string {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem("hestia_session_id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("hestia_session_id", id);
+  }
+  return id;
+}
+
+export async function createSavedSearch(payload: {
+  name: string;
+  filters: Record<string, any>;
+  channel: "whatsapp" | "email" | "push";
+  frequency: "instant" | "daily" | "weekly";
+}): Promise<SavedSearch | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const sessionId = getSessionId();
+
+  const { data, error } = await supabase
+    .from("saved_searches")
+    .insert({
+      name: payload.name,
+      filters: payload.filters,
+      channel: payload.channel,
+      frequency: payload.frequency,
+      user_id: user?.id ?? null,
+      session_id: user ? null : sessionId,
+      active: true,
+    })
+    .select()
+    .single();
+
+  if (error) { console.error("createSavedSearch:", error); return null; }
+  return data;
+}
+
+export async function getSavedSearches(): Promise<SavedSearch[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const sessionId = getSessionId();
+
+  let query = supabase
+    .from("saved_searches")
+    .select("*")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (user) {
+    query = query.eq("user_id", user.id);
+  } else {
+    query = query.eq("session_id", sessionId).is("user_id", null);
+  }
+
+  const { data, error } = await query;
+  if (error) { console.error("getSavedSearches:", error); return []; }
+  return data || [];
+}
+
+export async function deleteSavedSearch(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("saved_searches")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) { console.error("deleteSavedSearch:", error); return false; }
+  return true;
+}
+
+export async function toggleSavedSearch(id: string, active: boolean): Promise<boolean> {
+  const { error } = await supabase
+    .from("saved_searches")
+    .update({ active, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) { console.error("toggleSavedSearch:", error); return false; }
+  return true;
+}
