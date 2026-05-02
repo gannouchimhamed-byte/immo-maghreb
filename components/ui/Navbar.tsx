@@ -1,12 +1,23 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const links = [
+    { href: "/listings", label: "Annonces" },
+    { href: "/listings?action=vente", label: "Vente" },
+    { href: "/listings?action=location", label: "Location" },
+    { href: "/map", label: "🗺 Carte" },
+  ];
+
   return (
-    <nav className="sticky top-0 z-50 bg-navy border-b border-gold/20 backdrop-blur-sm">
+    <nav className="sticky top-0 z-50 bg-navy border-b border-gold/20">
       <div className="max-w-7xl mx-auto px-6 flex items-center h-16 gap-6">
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 no-underline shrink-0">
           <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
@@ -25,18 +36,19 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-1">
-          <Link href="/listings" className="px-4 py-2 text-[13px] text-cream/70 hover:text-cream transition-colors rounded-lg hover:bg-white/5">
-            Annonces
-          </Link>
-          <Link href="/listings?action=vente" className="px-4 py-2 text-[13px] text-cream/70 hover:text-cream transition-colors rounded-lg hover:bg-white/5">
-            Vente
-          </Link>
-          <Link href="/listings?action=location" className="px-4 py-2 text-[13px] text-cream/70 hover:text-cream transition-colors rounded-lg hover:bg-white/5">
-            Location
-          </Link>
+          {links.map(link => (
+            <Link key={link.href} href={link.href}
+              className={`px-4 py-2 text-[13px] transition-colors rounded-lg ${
+                pathname === link.href || (link.href === "/map" && pathname === "/map")
+                  ? "text-gold bg-white/8"
+                  : "text-cream/70 hover:text-cream hover:bg-white/5"
+              }`}>
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        <Link href="/listings?action=vente" className="hidden md:inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gold text-navy text-[13px] font-semibold hover:bg-gold-light transition-colors">
+        <Link href="/listings" className="hidden md:inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gold text-navy text-[13px] font-semibold hover:bg-gold/90 transition-colors no-underline">
           Publier une annonce
         </Link>
 
@@ -52,18 +64,15 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-navy-dark border-t border-gold/10 px-6 py-4 flex flex-col gap-2">
-          {["Annonces:/listings","Vente:/listings?action=vente","Location:/listings?action=location"].map(item => {
-            const [label, href] = item.split(":");
-            return (
-              <Link key={label} href={href} onClick={() => setMenuOpen(false)}
-                className="py-2.5 text-[14px] text-cream/80 hover:text-gold transition-colors border-b border-white/5 last:border-0">
-                {label}
-              </Link>
-            );
-          })}
+        <div className="md:hidden bg-navy border-t border-gold/10 px-6 py-4 flex flex-col gap-2">
+          {links.map(link => (
+            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+              className="py-2.5 text-[14px] text-cream/80 hover:text-gold transition-colors border-b border-white/5 last:border-0 no-underline">
+              {link.label}
+            </Link>
+          ))}
           <Link href="/listings" onClick={() => setMenuOpen(false)}
-            className="mt-2 py-3 text-center rounded-lg bg-gold text-navy text-[13px] font-bold">
+            className="mt-2 py-3 text-center rounded-lg bg-gold text-navy text-[13px] font-bold no-underline">
             Publier une annonce
           </Link>
         </div>

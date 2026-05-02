@@ -10,21 +10,21 @@ export async function getFeaturedListings() {
   const { data, error } = await supabase
     .from("listings")
     .select("*")
-    .eq("status","active")
-    .is("deleted_at",null)
-    .eq("is_featured",true)
-    .order("created_at",{ascending:false})
+    .eq("status", "active")
+    .is("deleted_at", null)
+    .eq("is_featured", true)
+    .order("created_at", { ascending: false })
     .limit(8);
   if (error) { console.error(error); return []; }
   return data || [];
 }
 
 export async function searchListings(filters: {
-  action?: string|null; type?: string|null; wilaya?: string|null;
-  minPrice?: number|null; maxPrice?: number|null; minArea?: number|null; maxArea?: number|null;
-  rooms?: number|null; minFloor?: number|null; maxFloor?: number|null;
-  hasParking?: boolean|null; hasElevator?: boolean|null; hasPool?: boolean|null; hasTerrace?: boolean|null;
-  deed?: string|null; q?: string|null; limit?: number; offset?: number;
+  action?: string | null; type?: string | null; wilaya?: string | null;
+  minPrice?: number | null; maxPrice?: number | null; minArea?: number | null; maxArea?: number | null;
+  rooms?: number | null; minFloor?: number | null; maxFloor?: number | null;
+  hasParking?: boolean | null; hasElevator?: boolean | null; hasPool?: boolean | null; hasTerrace?: boolean | null;
+  deed?: string | null; q?: string | null; limit?: number; offset?: number;
 } = {}) {
   const { data, error } = await supabase.rpc("search_listings", {
     p_action: filters.action || null,
@@ -55,4 +55,34 @@ export async function getListingById(id: string) {
     .from("listings").select("*").eq("id", id).single();
   if (error) return null;
   return data;
+}
+
+// For the map page — returns only fields needed for pins + popups
+export async function getListingsForMap(filters: {
+  action?: string | null; type?: string | null; wilaya?: string | null;
+  minPrice?: number | null; maxPrice?: number | null; rooms?: number | null;
+} = {}) {
+  let query = supabase
+    .from("listings")
+    .select(`
+      id, title, price, area_m2, rooms, action, type,
+      wilaya, district, lat, lng,
+      primary_image_url, ai_signal, is_featured, is_verified,
+      has_parking, has_elevator
+    `)
+    .eq("status", "active")
+    .is("deleted_at", null)
+    .not("lat", "is", null)
+    .not("lng", "is", null);
+
+  if (filters.action)   query = query.eq("action", filters.action);
+  if (filters.type)     query = query.eq("type", filters.type);
+  if (filters.wilaya)   query = query.eq("wilaya", filters.wilaya);
+  if (filters.minPrice) query = query.gte("price", filters.minPrice);
+  if (filters.maxPrice) query = query.lte("price", filters.maxPrice);
+  if (filters.rooms)    query = query.gte("rooms", filters.rooms);
+
+  const { data, error } = await query.order("is_featured", { ascending: false }).limit(200);
+  if (error) { console.error(error); return []; }
+  return data || [];
 }

@@ -2,10 +2,10 @@
 const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+  transpilePackages: ['mapbox-gl'],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "icmfvoximdrnglfwjxat.supabase.co" },
       { protocol: "https", hostname: "**.supabase.co" },
     ],
   },
