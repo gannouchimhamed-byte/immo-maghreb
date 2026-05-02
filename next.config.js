@@ -2,7 +2,7 @@
 const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
-  transpilePackages: ['mapbox-gl'],
+  transpilePackages: ['maplibre-gl'],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
