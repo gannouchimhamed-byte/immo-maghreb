@@ -1,16 +1,41 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Outfit:wght@300;400;500;600&display=swap');
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --cream: #F7F2E9; --sand: #EDE5D4; --terra: #C4611F;
-  --dark: #1C1208; --muted: #9A8070; --white: #FDFBF7;
-  --gold: #D4A853; --sage: #2D6A4F; --brown: #5C3D1E;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-cream text-navy;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 }
-body { background: var(--cream); color: var(--dark); font-family: 'Outfit', sans-serif; }
-a { text-decoration: none; color: inherit; }
-button { cursor: pointer; border: none; font-family: 'Outfit', sans-serif; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-.fade-up { animation: fadeUp .5s ease both; }
-.fade-up-1 { animation: fadeUp .5s .1s ease both; }
-.fade-up-2 { animation: fadeUp .5s .2s ease both; }
-.fade-up-3 { animation: fadeUp .5s .3s ease both; }
-@keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+@layer utilities {
+  .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(212,175,100,0.3); border-radius: 2px; }
+
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+  }
+  .animate-slide-in-right { animation: slide-in-right 0.25s ease-out; }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up { animation: fade-up 0.4s ease-out both; }
+
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,100,0); }
+    50%       { box-shadow: 0 0 0 6px rgba(212,175,100,0.15); }
+  }
+  .animate-pulse-gold { animation: pulse-gold 2s ease-in-out infinite; }
+}
