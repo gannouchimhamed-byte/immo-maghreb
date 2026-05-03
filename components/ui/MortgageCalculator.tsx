@@ -22,51 +22,37 @@ interface Props {
 }
 
 export default function MortgageCalculator({ initialPrice = 350000, className = "", isStandalone = false }: Props) {
-  const [price, setPrice] = useState(initialPrice);
+  const [price, setPrice] = useState(initialPrice || 0);
   const [downPaymentPercent, setDownPaymentPercent] = useState(20);
   const [years, setYears] = useState(20);
   const [selectedBank, setSelectedBank] = useState<BankPreset>(BANKS[0]);
 
-  // Derived state
-  const downPayment = Math.round(price * (downPaymentPercent / 100));
-  const principal = price - downPayment;
-  const annualRate = selectedBank.rate / 100;
-  const monthlyRate = annualRate / 12;
-  const numberOfPayments = years * 12;
-
-  // Mortgage formula: M = P[r(1+r)^n]/[(1+r)^n-1]
-  const [monthlyPayment, setMonthlyPayment] = useState(0);
-  const [totalCost, setTotalCost] = useState(0);
-  const [totalInterest, setTotalInterest] = useState(0);
-
   useEffect(() => {
-    // If user changes initialPrice prop dynamically
-    if (initialPrice !== price && !isStandalone) {
+    if (initialPrice && initialPrice !== price && !isStandalone) {
         setPrice(initialPrice);
     }
   }, [initialPrice]);
 
-  useEffect(() => {
-    if (principal <= 0 || numberOfPayments <= 0 || monthlyRate <= 0) {
-      setMonthlyPayment(0);
-      setTotalCost(0);
-      setTotalInterest(0);
-      return;
-    }
+  // Derived state calculated synchronously
+  const downPayment = Math.round((price || 0) * (downPaymentPercent / 100));
+  const principal = (price || 0) - downPayment;
+  const annualRate = selectedBank.rate / 100;
+  const monthlyRate = annualRate / 12;
+  const numberOfPayments = years * 12;
 
+  let monthlyPayment = 0;
+  let totalCost = 0;
+  let totalInterest = 0;
+
+  if (principal > 0 && numberOfPayments > 0 && monthlyRate > 0) {
     const mathPower = Math.pow(1 + monthlyRate, numberOfPayments);
-    const monthly = (principal * (monthlyRate * mathPower)) / (mathPower - 1);
-    
-    const cost = monthly * numberOfPayments;
-    const interest = cost - principal;
+    monthlyPayment = (principal * (monthlyRate * mathPower)) / (mathPower - 1);
+    totalCost = monthlyPayment * numberOfPayments;
+    totalInterest = totalCost - principal;
+  }
 
-    setMonthlyPayment(monthly);
-    setTotalCost(cost);
-    setTotalInterest(interest);
-  }, [principal, monthlyRate, numberOfPayments]);
-
-  const interestPercentage = principal > 0 ? (totalInterest / totalCost) * 100 : 0;
-  const principalPercentage = principal > 0 ? (principal / totalCost) * 100 : 0;
+  const interestPercentage = totalCost > 0 ? (totalInterest / totalCost) * 100 : 0;
+  const principalPercentage = totalCost > 0 ? (principal / totalCost) * 100 : 0;
 
   return (
     <div className={`bg-white rounded-2xl shadow-sm border border-[#1B2B3A]/10 p-6 ${className}`}>
@@ -98,12 +84,12 @@ export default function MortgageCalculator({ initialPrice = 350000, className = 
           <div>
             <div className="flex justify-between mb-2">
               <label className="text-xs font-bold text-[#1B2B3A] uppercase">Prix du Bien</label>
-              <span className="text-sm font-bold text-[#D4AF64]">{price.toLocaleString()} TND</span>
+              <span className="text-sm font-bold text-[#D4AF64]">{(price || 0).toLocaleString()} TND</span>
             </div>
-            <input type="range" min={50000} max={2000000} step={10000} value={price} onChange={e => setPrice(Number(e.target.value))}
+            <input type="range" min={50000} max={2000000} step={10000} value={price || 0} onChange={e => setPrice(Number(e.target.value))}
               className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#1B2B3A]"/>
             {isStandalone && (
-               <input type="number" value={price} onChange={e => setPrice(Number(e.target.value))} className="mt-2 w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:outline-[#1B2B3A]"/>
+               <input type="number" value={price || 0} onChange={e => setPrice(Number(e.target.value))} className="mt-2 w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:outline-[#1B2B3A]"/>
             )}
           </div>
 
@@ -138,7 +124,7 @@ export default function MortgageCalculator({ initialPrice = 350000, className = 
               <span className="text-4xl md:text-5xl font-display font-bold text-white">{Math.round(monthlyPayment).toLocaleString()}</span>
               <span className="text-[#D4AF64] font-medium pb-1.5">TND / mois</span>
             </div>
-            {price === 0 ? <p className="text-xs text-red-400 mt-2">Veuillez entrer un prix valide.</p> : null}
+            {(!price || price <= 0) ? <p className="text-xs text-red-400 mt-2">Veuillez entrer un prix valide.</p> : null}
           </div>
 
           <div className="mt-6 md:mt-8">
