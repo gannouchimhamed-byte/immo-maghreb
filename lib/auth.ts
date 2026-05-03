@@ -106,3 +106,55 @@ export async function migrateDeviceSearches(deviceId: string, userId: string): P
 
 // Re-export getDeviceId from saved-searches for convenience
 export { getDeviceId } from "@/lib/saved-searches";
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+export async function getFavorites(userId: string) {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("favorites")
+    .select(`
+      id, created_at,
+      listing:listings (
+        id, title, price, area_m2, rooms, bathrooms, floor,
+        wilaya, district, delegation, action, type, deed,
+        primary_image_url, image_urls,
+        has_parking, has_elevator, has_pool, has_terrace,
+        is_featured, is_verified, ai_signal, ai_price_per_m2,
+        metro_distance, beach_distance, school_distance,
+        lat, lng, status
+      )
+    `)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) { console.error(error); return []; }
+  return (data || []).filter(f => f.listing && (f.listing as any).status === "active");
+}
+
+export async function toggleFavorite(userId: string, listingId: string): Promise<boolean> {
+  const sb = createClient();
+  const { data } = await sb
+    .from("favorites")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("listing_id", listingId)
+    .maybeSingle();
+
+  if (data) {
+    await sb.from("favorites").delete().eq("id", data.id);
+    return false; // removed
+  } else {
+    await sb.from("favorites").insert({ user_id: userId, listing_id: listingId });
+    return true; // added
+  }
+}
+
+export async function isFavorite(userId: string, listingId: string): Promise<boolean> {
+  const sb = createClient();
+  const { data } = await sb
+    .from("favorites")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("listing_id", listingId)
+    .maybeSingle();
+  return !!data;
+}

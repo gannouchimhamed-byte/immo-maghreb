@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { estimateCommuteMinutes, MODE_LABELS } from "@/lib/commute";
 import type { CommuteState } from "@/lib/commute";
 
@@ -42,6 +42,7 @@ interface ListingCardProps {
   isInComparison?: boolean;
   style?: React.CSSProperties;
   commute?: CommuteState | null;
+  userId?: string | null;
 }
 
 const formatPrice = (price: number, action: string) => {
@@ -68,9 +69,27 @@ const TYPE_LABELS: Record<string, string> = {
 
 const BLUR_PLACEHOLDER = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/wAARCAAEAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgQF/8QAIRAAAQQBBAMAAAAAAAAAAAAAAQACAxEEEiExQVH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8Aqhh6rU6hJtb7Kmqqmh7W0LqOgDtD/9k=";
 
-export default function ListingCard({ listing: l, onCompareToggle, isInComparison = false, style, commute }: ListingCardProps) {
+export default function ListingCard({ listing: l, onCompareToggle, isInComparison = false, style, commute, userId }: ListingCardProps) {
   const [imgIdx, setImgIdx] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [faved, setFaved] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+
+  // Check favorite status on mount
+  useEffect(() => {
+    if (!userId) return;
+    import("@/lib/auth").then(({ isFavorite }) => isFavorite(userId, l.id)).then(setFaved).catch(() => {});
+  }, [userId, l.id]);
+
+  const handleFav = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!userId || favLoading) return;
+    setFavLoading(true);
+    const { toggleFavorite } = await import("@/lib/auth");
+    const added = await toggleFavorite(userId, l.id);
+    setFaved(added);
+    setFavLoading(false);
+  };
 
   const imgs = [l.primary_image_url, ...(l.image_urls || [])].filter(Boolean) as string[];
   const pricePerM2 = l.area_m2 > 0 ? Math.round(l.price / l.area_m2) : null;
@@ -149,6 +168,22 @@ export default function ListingCard({ listing: l, onCompareToggle, isInCompariso
             <svg className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 0L7.5 4.5H12L8.5 7L10 11.5L6 9L2 11.5L3.5 7L0 4.5H4.5L6 0Z"/></svg>
             VÉRIFIÉ HESTIA
           </div>
+        )}
+
+        {/* Favorite button */}
+        {userId && (
+          <button onClick={handleFav} disabled={favLoading}
+            className={`absolute bottom-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
+              faved ? "bg-rose-500 text-white" : "bg-white/80 text-navy/40 hover:text-rose-500"
+            }`}
+            title={faved ? "Retirer des favoris" : "Ajouter aux favoris"}>
+            {favLoading
+              ? <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"/>
+              : <svg className="w-4 h-4" viewBox="0 0 16 16" fill={faved ? "currentColor" : "none"}>
+                  <path d="M8 13.5S2 9.5 2 5.5a3.5 3.5 0 016-2.45A3.5 3.5 0 0114 5.5c0 4-6 8-6 8z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                </svg>
+            }
+          </button>
         )}
       </Link>
 
