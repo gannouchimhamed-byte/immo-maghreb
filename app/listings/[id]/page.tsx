@@ -5,10 +5,11 @@ import Image from "next/image";
 import Navbar from "@/components/ui/Navbar";
 import FavoriteButton from "@/components/ui/FavoriteButton";
 import dynamic from "next/dynamic";
-const MortgageCalculator = dynamic(() => import("@/components/ui/MortgageCalculator"), { ssr: false });
 import PriceTrendWidget from "@/components/listings/PriceTrendWidget";
 import ValuationWidget from "@/components/listings/ValuationWidget";
 import type { Metadata } from "next";
+
+const MortgageCalculator = dynamic(() => import("@/components/ui/MortgageCalculator"), { ssr: false });
 
 export const revalidate = 60;
 
