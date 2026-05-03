@@ -149,3 +149,82 @@ export async function deleteListing(listingId: string): Promise<boolean> {
   const { error } = await sb.from("listings").update({ deleted_at: new Date().toISOString(), status: "inactive" }).eq("id", listingId);
   return !error;
 }
+
+
+
+// ... (existing imports/exports remain via our patcher)
+
+export async function searchAgents(filters: { wilaya?: string; specialty?: string; rating?: number }) {
+  const sb = createClient();
+  let query = sb.from("agent_profiles").select("*, users:user_id(id)");
+  
+  if (filters.wilaya) {
+    query = query.eq("wilaya", filters.wilaya);
+  }
+  if (filters.rating) {
+    query = query.gte("rating", filters.rating);
+  }
+  // Specialty requires contains logic for arrays, but standard eq for JSON depending on schema
+  if (filters.specialty) {
+    // Supabase can use contains for text[]
+    query = query.contains("specialties", [filters.specialty]);
+  }
+  
+  const { data, error } = await query.order("rating", { ascending: false }).limit(50);
+  if (error) console.error("searchAgents error:", error);
+  return data || [];
+}
+
+export async function getMonthlyBIStats(agentId: string) {
+  const sb = createClient();
+  
+  // Vues des annonces
+  const { data: listings } = await sb.from("listings")
+    .select("id, title, view_count, lead_count")
+    .eq("agent_id", agentId)
+    .is("deleted_at", null);
+    
+  let totalViews = 0;
+  let listingStats = [];
+  if (listings) {
+    for (const l of listings) {
+       totalViews += (l.view_count || 0);
+       listingStats.push({ 
+           title: l.title, 
+           views: l.view_count || 0, 
+           leads: l.lead_count || 0,
+           conversion: (l.view_count || 0) > 0 ? (((l.lead_count || 0) / l.view_count!) * 100).toFixed(1) : "0"
+       });
+    }
+  }
+
+  // Leads de ce mois vs mois dernier
+  const now = new Date();
+  const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  
+  const { data: leads } = await sb.from("leads")
+    .select("status, created_at, close_price, listing:listings(title)")
+    .eq("agent_id", agentId);
+    
+  let newLeadsThisMonth = 0;
+  let totalClosed = 0;
+  let totalClosedVal = 0;
+  
+  if (leads) {
+    for (const l of leads) {
+        if (l.created_at >= firstDayThisMonth && l.status === "new") newLeadsThisMonth++;
+        if (l.status === "closed") {
+            totalClosed++;
+            totalClosedVal += (l.close_price || 0);
+        }
+    }
+  }
+
+  return {
+    totalViews,
+    newLeadsThisMonth,
+    totalClosed,
+    totalClosedVal,
+    listingStats: listingStats.sort((a,b) => b.leads - a.leads).slice(0, 5) // top 5
+  };
+}
