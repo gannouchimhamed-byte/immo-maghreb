@@ -48,11 +48,12 @@ export default function Navbar({ savedSearchCount }: NavbarProps) {
   }, []);
 
   const links = [
-    { href: "/listings", label: "Annonces" },
+    { href: "/listings",          label: "Annonces"  },
     { href: "/listings?action=vente", label: "Vente" },
     { href: "/listings?action=location", label: "Location" },
-    { href: "/map", label: "🗺 Carte" },
-    { href: "/favorites", label: "❤ Favoris" },
+    { href: "/map",               label: "🗺 Carte"   },
+    { href: "/promoteurs",        label: "🏗 Promoteurs" },
+    { href: "/favorites",         label: "❤ Favoris" },
   ];
 
   const isActive = (href: string) =>

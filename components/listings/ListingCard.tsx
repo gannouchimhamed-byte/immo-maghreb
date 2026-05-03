@@ -20,6 +20,10 @@ export interface Listing {
   metro_distance: number | null; beach_distance: number | null; school_distance: number | null;
   action: "vente" | "location"; type: string; deed: string | null; view_count?: number;
   market_trend?: number | null;
+  // Promoter fields
+  promoter_id?: string | null;
+  project_name?: string | null;
+  promoter?: { id: string; company_name: string; is_verified: boolean } | null;
 }
 
 interface ListingCardProps {
@@ -259,8 +263,20 @@ export default function ListingCard({
           <div className="h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent"/>
 
           {/* Footer */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             {l.deed && <span className="text-[10px] px-2 py-0.5 rounded-full border border-gold/30 text-cream-muted font-medium">{DEED_LABELS[l.deed]||l.deed}</span>}
+            {/* Promoter link — "View all projects by this promoter" */}
+            {(l as any).promoter_id && (
+              <Link href={`/promoteurs/${(l as any).promoter_id}`}
+                onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1 text-[10px] text-gold hover:underline font-semibold no-underline"
+                title="Voir tous les projets de ce promoteur">
+                🏗 Promoteur →
+              </Link>
+            )}
+            {(l as any).project_name && !(l as any).promoter_id && (
+              <span className="text-[10px] text-cream-muted italic truncate max-w-[110px]">{(l as any).project_name}</span>
+            )}
             <span className="text-[10px] text-cream-muted font-medium uppercase tracking-wider ml-auto">{TYPE_LABELS[l.type]||l.type}</span>
           </div>
         </div>
