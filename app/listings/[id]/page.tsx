@@ -22,6 +22,7 @@ const AI: Record<string,{cls:string,label:string}> = {
 };
 
 export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
+  try {
   const { id } = await params;
   const l = await getListingById(id);
   if (!l) return {};
@@ -33,6 +34,7 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
 }
 
 export default async function ListingDetailPage({ params }: { params: any }) {
+  try {
   const { id } = await params;
   let listing: any;
   try { listing = await getListingById(id); } catch { notFound(); }
@@ -303,4 +305,5 @@ export default async function ListingDetailPage({ params }: { params: any }) {
       </footer>
     </>
   );
+} catch(err:any) { return <div style={{padding:"50px", color:"red"}}><pre>{err.stack || err.toString()}</pre></div>; }
 }
