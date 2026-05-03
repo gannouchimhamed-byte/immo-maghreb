@@ -160,10 +160,16 @@ export default function Navbar({ savedSearchCount }: NavbarProps) {
             </div>
           ) : (
             /* Not logged in */
-            <Link href="/auth/login"
-              className="hidden md:inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gold text-navy text-[13px] font-semibold hover:bg-gold/90 transition-colors no-underline">
-              Se connecter
-            </Link>
+            <>
+              <Link href="/post"
+                className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gold/40 text-gold text-[12px] font-semibold hover:bg-gold/10 transition-colors no-underline">
+                Publier
+              </Link>
+              <Link href="/auth/login"
+                className="hidden md:inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gold text-navy text-[13px] font-semibold hover:bg-gold/90 transition-colors no-underline">
+                Se connecter
+              </Link>
+            </>
           )
         )}
 
