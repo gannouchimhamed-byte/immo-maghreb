@@ -52,6 +52,7 @@ export default function Navbar({ savedSearchCount }: NavbarProps) {
     { href: "/listings?action=vente", label: "Vente" },
     { href: "/listings?action=location", label: "Location" },
     { href: "/map", label: "🗺 Carte" },
+    { href: "/favorites", label: "❤ Favoris" },
   ];
 
   const isActive = (href: string) =>

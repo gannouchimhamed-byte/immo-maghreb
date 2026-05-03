@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/ui/Navbar";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 import PriceTrendWidget from "@/components/listings/PriceTrendWidget";
 import type { Metadata } from "next";
 
@@ -87,7 +88,32 @@ export default async function ListingDetailPage({ params }: { params: any }) {
             <div className="space-y-6">
 
               {/* Image gallery */}
-              <div className="rounded-2xl overflow-hidden">
+              <div className="rounded-2xl overflow-hidden relative">
+                {/* Action buttons: heart + share — top right of gallery (ImmoScout24 style) */}
+                <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                  <FavoriteButton
+                    listingId={listing.id}
+                    userId={null}
+                    variant="detail"
+                  />
+                  <button
+                    className="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: listing.title, url: window.location.href });
+                      } else {
+                        navigator.clipboard?.writeText(window.location.href);
+                      }
+                    }}
+                    title="Partager"
+                  >
+                    <svg className="w-5 h-5 text-navy" viewBox="0 0 20 20" fill="none">
+                      <path d="M15 7a2 2 0 100-4 2 2 0 000 4zM5 10a2 2 0 100-4 2 2 0 000 4zM15 17a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M7 9l6-3M7 12l6 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+
                 {allImages.length > 0 ? (
                   <div className="grid gap-2" style={{gridTemplateColumns:allImages.length>1?"1fr 1fr":"1fr",gridTemplateRows:"auto"}}>
                     <div className="relative aspect-video" style={allImages.length>1?{gridColumn:"1",gridRow:"1/3"}:{}}>

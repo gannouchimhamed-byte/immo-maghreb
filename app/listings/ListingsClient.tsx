@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useTransition, useMemo } from "react";
+import { useState, useCallback, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/ui/Navbar";
 import ListingCard, { type Listing } from "@/components/listings/ListingCard";
@@ -8,6 +8,7 @@ import ComparisonEngine from "@/components/listings/ComparisonEngine";
 import PriceTrendWidget from "@/components/listings/PriceTrendWidget";
 import { isWithinCommute } from "@/lib/commute";
 import type { CommuteState } from "@/lib/commute";
+import { getUser } from "@/lib/auth";
 
 interface Props { listings: Listing[]; initialFilters: SF; }
 
@@ -18,6 +19,12 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [comparison, setComparison] = useState<string[]>([]);
   const [view, setView] = useState<"grid"|"list">("grid");
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Load user ID for favorites
+  useEffect(() => {
+    getUser().then(u => setUserId(u?.id ?? null)).catch(() => {});
+  }, []);
 
   // Commute filter state (client-side only, not in URL)
   const commute = filters.commute as CommuteState | null | undefined;
@@ -133,6 +140,7 @@ export default function ListingsClient({ listings, initialFilters }: Props) {
                     isInComparison={comparison.includes(l.id)}
                     style={{animationDelay:`${i*30}ms`}}
                     commute={commute}
+                    userId={userId}
                   />
                 ))}
               </div>
