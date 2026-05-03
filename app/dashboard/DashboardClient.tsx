@@ -570,6 +570,8 @@ function AnalyticsSection({ listings, leads }: { listings: AgentListing[]; leads
 }
 
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
+import BIReport from "./BIReport";
+
 export default function DashboardClient() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -847,6 +849,9 @@ export default function DashboardClient() {
           </div>
         )}
 
+      
+        {/* ── BI Reports tab ──────────────────────────────────────────────── */} 
+        {tab === "reports" && userId && <BIReport agentId={userId} />}
       </main>
     </>
   );
