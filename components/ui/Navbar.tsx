@@ -138,9 +138,10 @@ export default function Navbar({ savedSearchCount }: NavbarProps) {
                     <p className="text-[11px] text-cream-muted truncate">{profile.email}</p>
                   </div>
                   {[
+                    { href: "/dashboard",      icon: "📊", label: "Tableau de bord" },
                     { href: "/saved-searches", icon: "🔔", label: "Mes alertes" },
-                    { href: "/profile", icon: "👤", label: "Mon profil" },
-                    { href: "/listings", icon: "🏠", label: "Mes favoris" },
+                    { href: "/profile",        icon: "👤", label: "Mon profil" },
+                    { href: "/favorites",      icon: "❤",  label: "Mes favoris" },
                   ].map(item => (
                     <Link key={item.href} href={item.href}
                       onClick={() => setUserMenuOpen(false)}
