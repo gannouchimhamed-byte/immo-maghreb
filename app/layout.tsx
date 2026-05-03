@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import dynamic from "next/dynamic";
+
+const ChatWidget = dynamic(() => import("@/components/ui/ChatWidget"), { ssr: false });
 
 export const metadata: Metadata = {
   title: { default: "Hestia — Trouvez votre chez-vous en Tunisie", template: "%s | Hestia" },
@@ -17,7 +20,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className="bg-cream min-h-screen antialiased">{children}</body>
+      <body className="bg-cream min-h-screen antialiased">
+        {children}
+        <ChatWidget />
+      </body>
     </html>
   );
 }
