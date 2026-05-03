@@ -5,6 +5,7 @@ import Image from "next/image";
 import Navbar from "@/components/ui/Navbar";
 import FavoriteButton from "@/components/ui/FavoriteButton";
 import PriceTrendWidget from "@/components/listings/PriceTrendWidget";
+import ValuationWidget from "@/components/listings/ValuationWidget";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
@@ -185,27 +186,27 @@ export default async function ListingDetailPage({ params }: { params: any }) {
                 )}
               </div>
 
-              {/* AI Valuation */}
-              {listing.ai_estimate && (
-                <div className="bg-navy rounded-2xl p-6 sm:p-8 border border-gold/20">
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-gold/10 flex items-center justify-center text-2xl">🤖</div>
-                      <div>
-                        <div className="font-display text-[18px] text-cream font-semibold">Estimation Hestia IA</div>
-                        <div className="text-[11px] text-cream/40">Calibré sur le marché {listing.wilaya} · Cette semaine</div>
-                      </div>
-                    </div>
-                    {aiCfg && <span className={`px-3 py-1.5 rounded-full text-[12px] font-semibold ${aiCfg.cls}`}>{aiCfg.label}</span>}
-                  </div>
-                  <div className="font-display text-[34px] text-gold font-semibold">{fmt(listing.ai_estimate)}</div>
-                  {listing.ai_confidence && <p className="text-cream/35 text-[12px] mt-1">Confiance: {Math.round(listing.ai_confidence*100)}%</p>}
-                  <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10 text-[12px] text-cream/50 leading-relaxed">
-                    {listing.price>listing.ai_estimate
-                      ? `Ce bien est proposé ${fmt(listing.price-listing.ai_estimate)} au-dessus de l'estimation. Négociation possible.`
-                      : `Ce bien est proposé ${fmt(listing.ai_estimate-listing.price)} sous l'estimation — potentielle opportunité.`}
-                  </div>
-                </div>
+              {/* AI Valuation — live, calls Edge Function */}
+              {listing.wilaya && listing.area_m2 && (
+                <ValuationWidget
+                  request={{
+                    wilaya:        listing.wilaya,
+                    type:          listing.type,
+                    action:        listing.action,
+                    area_m2:       listing.area_m2,
+                    rooms:         listing.rooms,
+                    floor:         listing.floor,
+                    deed:          listing.deed,
+                    has_parking:   listing.has_parking,
+                    has_elevator:  listing.has_elevator,
+                    has_pool:      listing.has_pool,
+                    has_terrace:   listing.has_terrace,
+                    metro_distance:  listing.metro_distance,
+                    beach_distance:  listing.beach_distance,
+                    listing_price:   listing.price,
+                    listing_id:      listing.id,
+                  }}
+                />
               )}
 
               {/* Proximity */}

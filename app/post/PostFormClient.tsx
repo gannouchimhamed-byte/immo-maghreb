@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
+import ValuationWidget from "@/components/listings/ValuationWidget";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -111,18 +112,43 @@ const DRAFT_KEY = "hestia_post_draft";
 const fmtNum = (s: string) => s ? Number(s).toLocaleString("fr-TN") : "";
 
 function EstimatedPrice({ form }: { form: FormData }) {
-  const price = parseFloat(form.price);
-  const area = parseFloat(form.area_m2);
-  if (!price || !area || area < 10) return null;
-  const ppm2 = Math.round(price / area);
-  const signal = ppm2 < 2000 ? { label: "Prix attractif", color: "text-emerald-600", bg: "bg-emerald-50" }
-    : ppm2 > 6000 ? { label: "Prix élevé", color: "text-rose-500", bg: "bg-rose-50" }
-    : { label: "Prix dans la moyenne", color: "text-amber-600", bg: "bg-amber-50" };
+  // Build request — only show if enough data to call the API
+  const canRun = !!(form.wilaya && form.type && form.action && form.area_m2 && Number(form.area_m2) > 5);
+  if (!canRun) {
+    // Fallback: simple heuristic while wilaya not filled yet
+    const price = parseFloat(form.price);
+    const area = parseFloat(form.area_m2);
+    if (!price || !area || area < 10) return null;
+    const ppm2 = Math.round(price / area);
+    const signal = ppm2 < 2000 ? { label: "Prix attractif", color: "text-emerald-600", bg: "bg-emerald-50" }
+      : ppm2 > 6000 ? { label: "Prix élevé", color: "text-rose-500", bg: "bg-rose-50" }
+      : { label: "Prix dans la moyenne", color: "text-amber-600", bg: "bg-amber-50" };
+    return (
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold ${signal.bg} ${signal.color} mt-2`}>
+        <span>🤖</span>
+        <span>{ppm2.toLocaleString("fr-TN")} TND/m² · {signal.label}</span>
+      </div>
+    );
+  }
   return (
-    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold ${signal.bg} ${signal.color} mt-2`}>
-      <span>🤖</span>
-      <span>{ppm2.toLocaleString("fr-TN")} TND/m² · {signal.label}</span>
-    </div>
+    <ValuationWidget
+      compact
+      request={{
+        wilaya:       form.wilaya,
+        type:         form.type,
+        action:       form.action,
+        area_m2:      Number(form.area_m2),
+        rooms:        form.rooms ? Number(form.rooms) : null,
+        floor:        form.floor ? Number(form.floor) : null,
+        deed:         form.deed || null,
+        has_parking:  form.has_parking,
+        has_elevator: form.has_elevator,
+        has_pool:     form.has_pool,
+        has_terrace:  form.has_terrace,
+        listing_price: form.price ? Number(form.price) : null,
+      }}
+      className="mt-2"
+    />
   );
 }
 
