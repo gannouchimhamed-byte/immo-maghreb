@@ -84,7 +84,7 @@ export default function MortgageCalculator({ initialPrice = 350000, className = 
           <div>
             <div className="flex justify-between mb-2">
               <label className="text-xs font-bold text-[#1B2B3A] uppercase">Prix du Bien</label>
-              <span className="text-sm font-bold text-[#D4AF64]">{(price || 0).toLocaleString()} TND</span>
+              <span className="text-sm font-bold text-[#D4AF64]">{(price || 0).toLocaleString("fr-TN")} TND</span>
             </div>
             <input type="range" min={50000} max={2000000} step={10000} value={price || 0} onChange={e => setPrice(Number(e.target.value))}
               className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#1B2B3A]"/>
@@ -96,7 +96,7 @@ export default function MortgageCalculator({ initialPrice = 350000, className = 
           <div>
             <div className="flex justify-between mb-2">
               <label className="text-xs font-bold text-[#1B2B3A] uppercase cursor-pointer">Autofinancement (Apport)</label>
-              <span className="text-sm font-bold text-[#D4AF64]">{downPaymentPercent}% — {downPayment.toLocaleString()} TND</span>
+              <span className="text-sm font-bold text-[#D4AF64]">{downPaymentPercent}% — {downPayment.toLocaleString("fr-TN")} TND</span>
             </div>
             <input type="range" min={0} max={90} step={5} value={downPaymentPercent} onChange={e => setDownPaymentPercent(Number(e.target.value))}
               className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#1B2B3A]"/>
@@ -121,7 +121,7 @@ export default function MortgageCalculator({ initialPrice = 350000, className = 
           <div>
             <p className="text-[11px] font-bold text-[#9A8878] uppercase mb-1">Mensualité Estimée</p>
             <div className="flex items-end gap-2">
-              <span className="text-4xl md:text-5xl font-display font-bold text-white">{Math.round(monthlyPayment).toLocaleString()}</span>
+              <span className="text-4xl md:text-5xl font-display font-bold text-white">{Math.round(monthlyPayment).toLocaleString("fr-TN")}</span>
               <span className="text-[#D4AF64] font-medium pb-1.5">TND / mois</span>
             </div>
             {(!price || price <= 0) ? <p className="text-xs text-red-400 mt-2">Veuillez entrer un prix valide.</p> : null}
@@ -139,17 +139,17 @@ export default function MortgageCalculator({ initialPrice = 350000, className = 
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-emerald-500"></div><span className="text-white">Capital Emprunté</span></div>
-                <span className="font-bold text-white">{Math.round(principal).toLocaleString()} TND</span>
+                <span className="font-bold text-white">{Math.round(principal).toLocaleString("fr-TN")} TND</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-amber-500"></div><span className="text-white">Intérêts Bancaires ({selectedBank.rate}%)</span></div>
-                <span className="font-bold text-white">{Math.round(totalInterest).toLocaleString()} TND</span>
+                <span className="font-bold text-white">{Math.round(totalInterest).toLocaleString("fr-TN")} TND</span>
               </div>
             </div>
 
             <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center text-sm">
                 <span className="text-[#9A8878] font-bold">Coût Total</span>
-                <span className="text-[#D4AF64] font-bold">{Math.round(totalCost).toLocaleString()} TND</span>
+                <span className="text-[#D4AF64] font-bold">{Math.round(totalCost).toLocaleString("fr-TN")} TND</span>
             </div>
           </div>
         </div>
