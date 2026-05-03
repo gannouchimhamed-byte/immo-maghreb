@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/ui/Navbar";
 import FavoriteButton from "@/components/ui/FavoriteButton";
+import MortgageCalculator from "@/components/ui/MortgageCalculator";
 import PriceTrendWidget from "@/components/listings/PriceTrendWidget";
 import ValuationWidget from "@/components/listings/ValuationWidget";
 import type { Metadata } from "next";
@@ -227,6 +228,9 @@ export default async function ListingDetailPage({ params }: { params: any }) {
                 </div>
               )}
 
+              
+              {/* Mortgage Calculator */}
+              {listing.action === "vente" && <MortgageCalculator initialPrice={listing.price} className="mb-6" />}
               {/* Price trend for this wilaya */}
               {listing.wilaya && <PriceTrendWidget wilaya={listing.wilaya} action={listing.action} propertyType={listing.type}/>}
             </div>
