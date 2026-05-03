@@ -58,7 +58,13 @@ export default function LoginClient() {
     const { error: err } = await signInWithOTP(email.trim().toLowerCase());
     setLoading(false);
     if (err) {
-      setError("Impossible d'envoyer le code. Réessayez.");
+      if (err.toLowerCase().includes("rate") || err.toLowerCase().includes("limit") || err.toLowerCase().includes("too many")) {
+        setError("Trop de tentatives. Attendez quelques minutes avant de réessayer.");
+      } else if (err.toLowerCase().includes("invalid email") || err.toLowerCase().includes("unable to validate")) {
+        setError("Adresse email invalide. Vérifiez et réessayez.");
+      } else {
+        setError("Impossible d'envoyer le code. Vérifiez votre email et réessayez.");
+      }
       return;
     }
     setStep("otp");
@@ -100,7 +106,15 @@ export default function LoginClient() {
     const { error: err } = await verifyOTP(email, token);
     setLoading(false);
     if (err) {
-      setError("Code incorrect ou expiré. Réessayez.");
+      if (err.toLowerCase().includes("expired") || err.toLowerCase().includes("expiré")) {
+        setError("Le code a expiré. Cliquez sur 'Renvoyer le code' pour en obtenir un nouveau.");
+      } else if (err.toLowerCase().includes("invalid") || err.toLowerCase().includes("incorrect")) {
+        setError("Code incorrect. Vérifiez votre email et réessayez.");
+      } else if (err.toLowerCase().includes("rate") || err.toLowerCase().includes("limit")) {
+        setError("Trop de tentatives. Attendez quelques minutes.");
+      } else {
+        setError("Code incorrect ou expiré. Cliquez sur 'Renvoyer le code'.");
+      }
       setOtp(["", "", "", "", "", ""]);
       otpRefs.current[0]?.focus();
       return;
@@ -345,6 +359,9 @@ export default function LoginClient() {
                     className="text-[13px] text-navy font-semibold hover:text-gold transition-colors underline underline-offset-2 disabled:opacity-50">
                     Renvoyer le code
                   </button>
+                  <p className="text-[11px] text-cream-muted mt-3">
+                    Vérifiez aussi vos <strong>spams / courriers indésirables</strong>
+                  </p>
                 </div>
 
                 {/* Security note */}
